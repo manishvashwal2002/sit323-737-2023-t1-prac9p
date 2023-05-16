@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb-app
+spec:
+  serviceName: mongodb
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: mongodb-data
+              mountPath: /data/db
+        - name: my-app
+          image: manishvashwal/mywebapp:3
+          ports:
+            - containerPort: 9886
+          env:
+            - name: MONGO_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: mongodb-config
+                  key: MONGO_USERNAME
+            - name: MONGO_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: mongodb-config
+                  key: MONGO_PASSWORD
+            - name: MONGO_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: mongodb-config
+                  key: MONGO_DATABASE
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodb-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
